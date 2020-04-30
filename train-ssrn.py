@@ -32,12 +32,12 @@ if use_gpu:
 
 train_data_loader = SSRNDataLoader(
     ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=20,
+    batch_size=24,
     mode='train'
 )
 valid_data_loader = SSRNDataLoader(
     ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=20,
+    batch_size=24,
     mode='valid'
 )
 
@@ -118,7 +118,7 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss},
                             {'mags-true': M[:1, :, :], 'mags-pred': Z[:1, :, :], 'mels': S[:1, :, :]})
-            intervals = 1000 if global_step < 60000 else 5000
+            intervals = 500 if global_step < 60000 else 5000
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, ssrn, optimizer)
                 if global_step < 60000:

@@ -2,12 +2,8 @@
 __author__ = 'Erdene-Ochir Tuguldur'
 
 import os
-import sys
 import glob
 import torch
-import math
-import requests
-from tqdm import tqdm
 from skimage.io import imsave
 
 
@@ -36,8 +32,8 @@ def load_checkpoint(checkpoint_file_name, model, optimizer):
 
 def save_checkpoint(logdir, epoch, global_step, model, optimizer):
     """Saves the training state into the given log dir path."""
-    checkpoint_file_name = os.path.join(logdir, 'step-%03dK.pth' % (global_step // 1000))
-    print("saving the checkpoint file '%s'..." % checkpoint_file_name)
+    checkpoint_file_name = os.path.join(logdir, f'step-{global_step:06d}.pth')
+    print(f"saving the checkpoint file '{checkpoint_file_name}'...")
     checkpoint = {
         'epoch': epoch + 1,
         'global_step': global_step,
@@ -46,23 +42,6 @@ def save_checkpoint(logdir, epoch, global_step, model, optimizer):
     }
     torch.save(checkpoint, checkpoint_file_name)
     del checkpoint
-
-
-def download_file(url, file_path):
-    """Downloads a file from the given URL."""
-    print("downloading %s..." % url)
-    r = requests.get(url, stream=True)
-    total_size = int(r.headers.get('content-length', 0))
-    block_size = 1024 * 1024
-    wrote = 0
-    with open(file_path, 'wb') as f:
-        for data in tqdm(r.iter_content(block_size), total=math.ceil(total_size // block_size), unit='MB'):
-            wrote = wrote + len(data)
-            f.write(data)
-
-    if total_size != 0 and wrote != total_size:
-        print("downloading failed")
-        sys.exit(1)
 
 
 def save_to_png(file_name, array):

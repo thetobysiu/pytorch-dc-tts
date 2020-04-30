@@ -143,7 +143,7 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss, 'loss_att': att_loss},
                             {'mels-true': S[:1, :, :], 'mels-pred': Y[:1, :, :], 'attention': A[:1, :, :]})
-            intervals = 1000 if global_step < 60000 else 5000
+            intervals = 500 if global_step < 60000 else 5000
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, text2mel, optimizer)
                 if global_step < 60000:
