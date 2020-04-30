@@ -34,12 +34,12 @@ if use_gpu:
 
 train_data_loader = Text2MelDataLoader(
     text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
-    batch_size=64,
+    batch_size=32,
     mode='train'
 )
 valid_data_loader = Text2MelDataLoader(
     text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
-    batch_size=64,
+    batch_size=32,
     mode='valid'
 )
 
@@ -148,7 +148,7 @@ def train(train_epoch, phase='train'):
                 save_checkpoint(logger.logdir, train_epoch, global_step, text2mel, optimizer)
                 if global_step < 60000:
                     for file in glob.glob(f'{logger.logdir}/step*'):
-                        if not abs(global_step - int(os.path.basename(file)[5:-5]) * 1000) < 4000:
+                        if not abs(global_step - int(os.path.basename(file)[5:-5])) < 4000:
                             os.remove(file)
 
     epoch_loss = running_loss / it
