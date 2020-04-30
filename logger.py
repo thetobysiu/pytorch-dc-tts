@@ -24,7 +24,7 @@ class Logger(object):
                 for key in sorted(loss_dict):
                     self.writer.add_scalar('%s-step/%s' % (phase, key), loss_dict[key], step)
 
-            if step % 1000 == 0:
+            if step % 500 == 0:
                 for key in sorted(image_dict):
                     self.writer.add_image('%s/%s' % (self.model_name, key), image_dict[key], step)
 

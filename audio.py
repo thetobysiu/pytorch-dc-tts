@@ -5,6 +5,8 @@ import copy
 import librosa
 import scipy.io.wavfile
 import numpy as np
+import glob
+import h5py
 
 from tqdm import tqdm
 from scipy import signal
@@ -36,7 +38,9 @@ def spectrogram2wav(mag):
     # trim
     wav, _ = librosa.effects.trim(wav)
 
-    return wav.astype(np.float32)
+    # output as PCM 16 bit
+    wav *= 32767
+    return wav.astype(np.int16)
 
 
 def griffin_lim(spectrogram):
@@ -113,18 +117,20 @@ def save_to_wav(mag, filename):
     scipy.io.wavfile.write(filename, hp.sr, wav)
 
 
-def preprocess(dataset_path, speech_dataset):
+def preprocess(voice_path):
     """Preprocess the given dataset."""
-    wavs_path = os.path.join(dataset_path, 'wavs')
-    mels_path = os.path.join(dataset_path, 'mels')
+    wavs_path = os.path.join(voice_path, 'wavs')
+    mels_path = os.path.join(voice_path, 'mels')
+    mags_path = os.path.join(voice_path, 'mags')
+
     if not os.path.isdir(mels_path):
         os.mkdir(mels_path)
-    mags_path = os.path.join(dataset_path, 'mags')
     if not os.path.isdir(mags_path):
         os.mkdir(mags_path)
 
-    for fname in tqdm(speech_dataset.fnames):
-        mel, mag = get_spectrograms(os.path.join(wavs_path, '%s.wav' % fname))
+    wavs_list = glob.glob(f'{wavs_path}/*.wav')
+    for wav_path in tqdm(wavs_list):
+        mel, mag = get_spectrograms(wav_path)
 
         t = mel.shape[0]
         # Marginal padding for reduction shape sync.
@@ -134,5 +140,8 @@ def preprocess(dataset_path, speech_dataset):
         # Reduction
         mel = mel[::hp.reduction_rate, :]
 
-        np.save(os.path.join(mels_path, '%s.npy' % fname), mel)
-        np.save(os.path.join(mags_path, '%s.npy' % fname), mag)
+        filename = os.path.splitext(os.path.basename(wav_path))[0]
+        with h5py.File(os.path.join(voice_path, 'mels.hdf5'), "w") as mels:
+            mels.create_dataset(filename, data=mel)
+        with h5py.File(os.path.join(voice_path, 'mags.hdf5'), "w") as mags:
+            mags.create_dataset(filename, data=mag)

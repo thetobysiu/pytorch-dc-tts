@@ -27,7 +27,7 @@ class HParams:
     max_T = 210  # Maximum number of mel frames.
 
     e = 128  # embedding dimension
-    d = 256  # Text2Mel hidden unit dimension
+    d = 512  # Text2Mel hidden unit dimension
     c = 512+128  # SSRN hidden unit dimension
 
     dropout_rate = 0.05  # dropout
@@ -41,7 +41,7 @@ class HParams:
 
     # SSRN network options
     ssrn_lr = 0.0005  # learning rate
-    ssrn_max_iteration = 150000  # max train step
+    ssrn_max_iteration = 300000  # max train step
     ssrn_weight_init = 'kaiming'  # 'kaiming', 'xavier' or 'none'
     ssrn_normalization = 'weight'  # 'layer', 'weight' or 'none'
     ssrn_basic_block = 'residual'  # 'highway', 'gated_conv' or 'residual'

@@ -2,10 +2,12 @@
 """Train the Text2Mel network. See: https://arxiv.org/abs/1710.08969"""
 __author__ = 'Erdene-Ochir Tuguldur'
 
+import os
 import sys
+import glob
 import time
 import argparse
-from tqdm import *
+from tqdm import tqdm
 
 import numpy as np
 
@@ -18,25 +20,28 @@ from hparams import HParams as hp
 from logger import Logger
 from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
 from datasets.data_loader import Text2MelDataLoader
+from datasets.speech import vocab, Speech as SpeechDataset
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--dataset", required=True, choices=['ljspeech', 'mbspeech'], help='dataset name')
+parser.add_argument("--voice", default='Geralt', help='voice name')
+parser.add_argument("--script", default='Geralt_s5_no_a.csv', help='script filename')
 args = parser.parse_args()
-
-if args.dataset == 'ljspeech':
-    from datasets.lj_speech import vocab, LJSpeech as SpeechDataset
-else:
-    from datasets.mb_speech import vocab, MBSpeech as SpeechDataset
 
 use_gpu = torch.cuda.is_available()
 print('use_gpu', use_gpu)
 if use_gpu:
     torch.backends.cudnn.benchmark = True
 
-train_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']), batch_size=64,
-                                       mode='train')
-valid_data_loader = Text2MelDataLoader(text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates']), batch_size=64,
-                                       mode='valid')
+train_data_loader = Text2MelDataLoader(
+    text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
+    batch_size=64,
+    mode='train'
+)
+valid_data_loader = Text2MelDataLoader(
+    text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
+    batch_size=64,
+    mode='valid'
+)
 
 text2mel = Text2Mel(vocab).cuda()
 
@@ -46,7 +51,7 @@ start_timestamp = int(time.time() * 1000)
 start_epoch = 0
 global_step = 0
 
-logger = Logger(args.dataset, 'text2mel')
+logger = Logger(args.voice, 'text2mel')
 
 # load the last checkpoint if exists
 last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
@@ -138,9 +143,13 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss, 'loss_att': att_loss},
                             {'mels-true': S[:1, :, :], 'mels-pred': Y[:1, :, :], 'attention': A[:1, :, :]})
-            if global_step % 5000 == 0:
-                # checkpoint at every 5000th step
+            intervals = 1000 if global_step < 60000 else 5000
+            if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, text2mel, optimizer)
+                if global_step < 60000:
+                    for file in glob.glob(f'{logger.logdir}/step*'):
+                        if not abs(global_step - int(os.path.basename(file)[5:-5]) * 1000) < 4000:
+                            os.remove(file)
 
     epoch_loss = running_loss / it
     epoch_l1_loss = running_l1_loss / it
