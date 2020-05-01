@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-"""Train the Text2Mel network. See: https://arxiv.org/abs/1710.08969"""
-__author__ = 'Erdene-Ochir Tuguldur'
-
+# Modified by Siu King Wai
 import os
 import sys
 import glob
@@ -30,8 +27,8 @@ print('use_gpu', use_gpu)
 if use_gpu:
     torch.backends.cudnn.benchmark = True
 
-mels_h5 = h5_loader(f'datasets/{args.voice}/mels.h5', driver='core')
-mags_h5 = h5_loader(f'datasets/{args.voice}/mags.h5', swmr=True)
+mels_h5 = h5_loader(f'datasets/{args.voice}/mels.h5')
+mags_h5 = h5_loader(f'datasets/{args.voice}/mags.h5')
 speech_dataset = lambda: SpeechDataset(['mags', 'mels'], args.voice, args.script, mels_h5, mags_h5)
 train_data_loader = SSRNDataLoader(ssrn_dataset=speech_dataset(), batch_size=hp.ssrn_batch_size, mode='train')
 valid_data_loader = SSRNDataLoader(ssrn_dataset=speech_dataset(), batch_size=hp.ssrn_batch_size, mode='valid')

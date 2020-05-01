@@ -1,5 +1,5 @@
 from audio import preprocess
 
-voice = 'Yennefer'
+voice = 'LJ'
 preprocess(f'datasets/{voice}')
 print("done")

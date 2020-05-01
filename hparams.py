@@ -8,6 +8,7 @@ class HParams:
     disable_progress_bar = False  # set True if you don't want the progress bar in the console
 
     logdir = "logdir"  # log dir where the checkpoints and tensorboard files are saved
+    max_load_memory = 4000000000  # h5 file size larger than this will not be load into memory
 
     # audio.py options, these values are from https://github.com/Kyubyong/dc_tts/blob/master/hyperparams.py
     reduction_rate = 4  # melspectrogram reduction rate, don't change because SSRN is using this rate

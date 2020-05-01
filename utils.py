@@ -6,6 +6,7 @@ import glob
 import torch
 import h5py
 from skimage.io import imsave
+from hparams import HParams as hp
 
 
 def get_last_checkpoint_file_name(logdir):
@@ -32,6 +33,11 @@ def load_checkpoint(checkpoint_file_name, model, optimizer):
 
 
 def h5_loader(filepath, mode='r', swmr=False, driver=None):
+    if mode == 'r':
+        if os.stat(filepath).st_size < hp.max_load_memory:  # less than 4GB will be load into memory
+            driver = 'core'
+        else:
+            swmr = True
     return h5py.File(filepath, mode=mode, libver='latest', swmr=swmr, driver=driver)
 
 
