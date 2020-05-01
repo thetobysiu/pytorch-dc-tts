@@ -43,17 +43,33 @@ def get_test_data(sentences, max_n):
 
 
 class Speech(Dataset):
-    def __init__(self, keys, dir_name, file, mels, mags):
-        self.keys = keys
-        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), dir_name)
-        self.fnames, self.text_lengths, self.texts = read_metadata(os.path.join(self.path, file))
-        self.mels = mels
-        self.mags = mags
+    keys = None
+    path = None
+    mels = None
+    mags = None
+    _fnames = None
+    _text_lengths = None
+    _texts = None
 
-    def slice(self, start, end):
-        self.fnames = self.fnames[start:end]
-        self.text_lengths = self.text_lengths[start:end]
-        self.texts = self.texts[start:end]
+    def __init__(self, start, end):
+        self.fnames = Speech._fnames[start:end]
+        self.text_lengths = Speech._text_lengths[start:end]
+        self.texts = Speech._texts[start:end]
+
+    @classmethod
+    def singleton(cls, name):
+        if getattr(cls, name) is None:
+            setattr(cls, name, h5_loader(os.path.join(cls.path, f'{name}.h5')))
+
+    @classmethod
+    def load(cls, keys, dir_name, file):
+        cls.keys = keys
+        cls.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), dir_name)
+        cls._fnames, cls._text_lengths, cls._texts = read_metadata(os.path.join(cls.path, file))
+
+    @classmethod
+    def get_script_length(cls):
+        return len(cls._fnames)
 
     def __len__(self):
         return len(self.fnames)
@@ -64,10 +80,12 @@ class Speech(Dataset):
             data['texts'] = self.texts[index]
         if 'mels' in self.keys:
             # (39, 80)
-            data['mels'] = self.mels[self.fnames[index]][:]
+            Speech.singleton('mels')
+            data['mels'] = Speech.mels[self.fnames[index]][:]
         if 'mags' in self.keys:
             # (39, 80)
-            data['mags'] = self.mags[self.fnames[index]][:]
+            Speech.singleton('mags')
+            data['mags'] = Speech.mags[self.fnames[index]][:]
         if 'mel_gates' in self.keys:
             data['mel_gates'] = np.ones(data['mels'].shape[0], dtype=np.int)  # TODO: because pre processing!
         if 'mag_gates' in self.keys:

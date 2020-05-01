@@ -32,13 +32,17 @@ def load_checkpoint(checkpoint_file_name, model, optimizer):
     return start_epoch, global_step
 
 
-def h5_loader(filepath, mode='r', swmr=False, driver=None):
+def h5_loader(filepath, mode='r'):
+    additional = {}
     if mode == 'r':
         if os.stat(filepath).st_size < hp.max_load_memory:  # less than 4GB will be load into memory
-            driver = 'core'
+            additional['driver'] = 'core'
         else:
-            swmr = True
-    return h5py.File(filepath, mode=mode, libver='latest', swmr=swmr, driver=driver)
+            additional['swmr'] = True
+            additional['rdcc_w0'] = 0.4
+            additional['rdcc_nslots'] = 4019
+            additional['rdcc_nbytes'] = 8192 ** 2
+    return h5py.File(filepath, mode=mode, libver='latest', **additional)
 
 
 def save_checkpoint(logdir, epoch, global_step, model, optimizer):

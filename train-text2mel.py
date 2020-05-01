@@ -15,9 +15,9 @@ import torch.nn.functional as F
 from models import Text2Mel
 from hparams import HParams as hp
 from logger import Logger
-from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint, h5_loader
+from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
 from datasets.data_loader import Text2MelDataLoader
-from datasets.speech import vocab, Speech as SpeechDataset
+from datasets.speech import vocab, Speech
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument("--voice", default='Geralt', help='voice name')
@@ -29,13 +29,10 @@ print('use_gpu', use_gpu)
 if use_gpu:
     torch.backends.cudnn.benchmark = True
 
-mels_h5 = h5_loader(f'datasets/{args.voice}/mels.h5')
-mags_h5 = h5_loader(f'datasets/{args.voice}/mags.h5')
-speech_dataset = lambda: SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script, mels_h5, mags_h5)
-train_data_loader = Text2MelDataLoader(
-    text2mel_dataset=speech_dataset(), batch_size=hp.text2mel_batch_size, mode='train')
-valid_data_loader = Text2MelDataLoader(
-    text2mel_dataset=speech_dataset(), batch_size=hp.text2mel_batch_size, mode='valid')
+Speech.load(['texts', 'mels', 'mel_gates'], args.voice, args.script)
+
+train_data_loader = Text2MelDataLoader(Speech, batch_size=hp.text2mel_batch_size, mode='train')
+valid_data_loader = Text2MelDataLoader(Speech, batch_size=hp.text2mel_batch_size, mode='valid')
 
 text2mel = Text2Mel(vocab).cuda()
 
