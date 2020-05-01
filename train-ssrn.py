@@ -32,12 +32,12 @@ if use_gpu:
 
 train_data_loader = SSRNDataLoader(
     ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=20,
+    batch_size=hp.ssrn_batch_size,
     mode='train'
 )
 valid_data_loader = SSRNDataLoader(
     ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=20,
+    batch_size=hp.ssrn_batch_size,
     mode='valid'
 )
 
@@ -49,7 +49,7 @@ start_timestamp = int(time.time() * 1000)
 start_epoch = 0
 global_step = 0
 
-logger = Logger(args.voice, 'ssrn')
+logger = Logger(f'{args.voice}-{hp.c}-{hp.ssrn_lr}-{hp.ssrn_batch_size}', 'ssrn')
 
 # load the last checkpoint if exists
 last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
@@ -123,7 +123,7 @@ def train(train_epoch, phase='train'):
                 save_checkpoint(logger.logdir, train_epoch, global_step, ssrn, optimizer)
                 if global_step < 60000:
                     for file in glob.glob(f'{logger.logdir}/step*'):
-                        if not abs(global_step - int(os.path.basename(file)[5:-5])) < 4000:
+                        if not abs(global_step - int(os.path.basename(file)[5:-4])) < 4000:
                             os.remove(file)
 
     epoch_loss = running_loss / it

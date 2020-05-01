@@ -34,6 +34,7 @@ class HParams:
 
     # Text2Mel network options
     text2mel_lr = 0.005  # learning rate
+    text2mel_batch_size = 24
     text2mel_max_iteration = 300000  # max train step
     text2mel_weight_init = 'none'  # 'kaiming', 'xavier' or 'none'
     text2mel_normalization = 'layer'  # 'layer', 'weight' or 'none'
@@ -41,6 +42,7 @@ class HParams:
 
     # SSRN network options
     ssrn_lr = 0.0005  # learning rate
+    ssrn_batch_size = 24
     ssrn_max_iteration = 300000  # max train step
     ssrn_weight_init = 'kaiming'  # 'kaiming', 'xavier' or 'none'
     ssrn_normalization = 'weight'  # 'layer', 'weight' or 'none'

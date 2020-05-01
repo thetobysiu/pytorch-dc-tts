@@ -15,11 +15,11 @@ mags_path = os.path.join(voice_path, 'mags')
 mels_list = glob.glob(f'{mels_path}/*.npy')
 mags_list = glob.glob(f'{mags_path}/*.npy')
 
-print('packing mels...')
-with h5py.File(os.path.join(voice_path, 'mels.hdf5'), "w") as mels:
+print('packing...')
+with h5py.File(os.path.join(voice_path, 'data.hdf5'), "w") as data:
     for mel in tqdm(mels_list):
-        mels.create_dataset(os.path.splitext(os.path.basename(mel))[0], data=np.load(mel))
-print('packing mags...')
-with h5py.File(os.path.join(voice_path, 'mags.hdf5'), "w") as mags:
+        data.create_dataset(f'mels/{os.path.splitext(os.path.basename(mel))[0]}',
+                            chunks=True, fletcher32=True, dtype='float32', data=np.load(mel))
     for mag in tqdm(mags_list):
-        mags.create_dataset(os.path.splitext(os.path.basename(mag))[0], data=np.load(mag))
+        data.create_dataset(f'mags/{os.path.splitext(os.path.basename(mag))[0]}',
+                            chunks=True, fletcher32=True, dtype='float32', data=np.load(mag))

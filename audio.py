@@ -6,11 +6,11 @@ import librosa
 import scipy.io.wavfile
 import numpy as np
 import glob
-import h5py
 
 from tqdm import tqdm
 from scipy import signal
 from hparams import HParams as hp
+from utils import h5_loader
 
 
 def spectrogram2wav(mag):
@@ -117,31 +117,22 @@ def save_to_wav(mag, filename):
     scipy.io.wavfile.write(filename, hp.sr, wav)
 
 
+# modified for h5py
 def preprocess(voice_path):
     """Preprocess the given dataset."""
-    wavs_path = os.path.join(voice_path, 'wavs')
-    mels_path = os.path.join(voice_path, 'mels')
-    mags_path = os.path.join(voice_path, 'mags')
+    with h5_loader(f'{voice_path}/mels.h5', mode='w') as mels, h5_loader(f'{voice_path}/mags.h5', mode='w') as mags:
+        wavs_list = glob.glob(f'{voice_path}/wavs/*.wav')
+        for wav_path in tqdm(wavs_list):
+            mel, mag = get_spectrograms(wav_path)
 
-    if not os.path.isdir(mels_path):
-        os.mkdir(mels_path)
-    if not os.path.isdir(mags_path):
-        os.mkdir(mags_path)
+            t = mel.shape[0]
+            # Marginal padding for reduction shape sync.
+            num_paddings = hp.reduction_rate - (t % hp.reduction_rate) if t % hp.reduction_rate != 0 else 0
+            mel = np.pad(mel, [[0, num_paddings], [0, 0]], mode="constant")
+            mag = np.pad(mag, [[0, num_paddings], [0, 0]], mode="constant")
+            # Reduction
+            mel = mel[::hp.reduction_rate, :]
 
-    wavs_list = glob.glob(f'{wavs_path}/*.wav')
-    for wav_path in tqdm(wavs_list):
-        mel, mag = get_spectrograms(wav_path)
-
-        t = mel.shape[0]
-        # Marginal padding for reduction shape sync.
-        num_paddings = hp.reduction_rate - (t % hp.reduction_rate) if t % hp.reduction_rate != 0 else 0
-        mel = np.pad(mel, [[0, num_paddings], [0, 0]], mode="constant")
-        mag = np.pad(mag, [[0, num_paddings], [0, 0]], mode="constant")
-        # Reduction
-        mel = mel[::hp.reduction_rate, :]
-
-        filename = os.path.splitext(os.path.basename(wav_path))[0]
-        with h5py.File(os.path.join(voice_path, 'mels.hdf5'), "w") as mels:
-            mels.create_dataset(filename, data=mel)
-        with h5py.File(os.path.join(voice_path, 'mags.hdf5'), "w") as mags:
-            mags.create_dataset(filename, data=mag)
+            fname = os.path.splitext(os.path.basename(wav_path))[0]
+            mels.create_dataset(fname, data=mel, dtype='float32', fletcher32=True)
+            mags.create_dataset(fname, data=mag, dtype='float32', fletcher32=True)

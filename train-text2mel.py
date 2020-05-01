@@ -18,7 +18,7 @@ import torch.nn.functional as F
 from models import Text2Mel
 from hparams import HParams as hp
 from logger import Logger
-from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
+from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint, h5_loader
 from datasets.data_loader import Text2MelDataLoader
 from datasets.speech import vocab, Speech as SpeechDataset
 
@@ -32,16 +32,13 @@ print('use_gpu', use_gpu)
 if use_gpu:
     torch.backends.cudnn.benchmark = True
 
+mels_h5 = h5_loader(f'datasets/{args.voice}/mels.h5', driver='core')
+mags_h5 = h5_loader(f'datasets/{args.voice}/mags.h5', swmr=True)
+speech_dataset = lambda: SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script, mels_h5, mags_h5)
 train_data_loader = Text2MelDataLoader(
-    text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
-    batch_size=32,
-    mode='train'
-)
+    text2mel_dataset=speech_dataset(), batch_size=hp.text2mel_batch_size, mode='train')
 valid_data_loader = Text2MelDataLoader(
-    text2mel_dataset=SpeechDataset(['texts', 'mels', 'mel_gates'], args.voice, args.script),
-    batch_size=32,
-    mode='valid'
-)
+    text2mel_dataset=speech_dataset(), batch_size=hp.text2mel_batch_size, mode='valid')
 
 text2mel = Text2Mel(vocab).cuda()
 
@@ -51,7 +48,7 @@ start_timestamp = int(time.time() * 1000)
 start_epoch = 0
 global_step = 0
 
-logger = Logger(args.voice, 'text2mel')
+logger = Logger(f'{args.voice}-{hp.d}-{hp.text2mel_lr}-{hp.text2mel_batch_size}', 'text2mel')
 
 # load the last checkpoint if exists
 last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
@@ -143,13 +140,14 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss, 'loss_att': att_loss},
                             {'mels-true': S[:1, :, :], 'mels-pred': Y[:1, :, :], 'attention': A[:1, :, :]})
-            intervals = 500 if global_step < 60000 else 5000
+            # intervals = 500 if global_step < 60000 else 5000
+            intervals = 500
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, text2mel, optimizer)
-                if global_step < 60000:
-                    for file in glob.glob(f'{logger.logdir}/step*'):
-                        if not abs(global_step - int(os.path.basename(file)[5:-5])) < 4000:
-                            os.remove(file)
+                # if global_step < 60000:
+                for file in glob.glob(f'{logger.logdir}/step*'):
+                    if not abs(global_step - int(os.path.basename(file)[5:-4])) < 4000:
+                        os.remove(file)
 
     epoch_loss = running_loss / it
     epoch_l1_loss = running_l1_loss / it

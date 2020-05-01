@@ -4,6 +4,7 @@ __author__ = 'Erdene-Ochir Tuguldur'
 import os
 import glob
 import torch
+import h5py
 from skimage.io import imsave
 
 
@@ -28,6 +29,10 @@ def load_checkpoint(checkpoint_file_name, model, optimizer):
     del checkpoint
     print("loaded checkpoint epoch=%d step=%d" % (start_epoch, global_step))
     return start_epoch, global_step
+
+
+def h5_loader(filepath, mode='r', swmr=False, driver=None):
+    return h5py.File(filepath, mode=mode, libver='latest', swmr=swmr, driver=driver)
 
 
 def save_checkpoint(logdir, epoch, global_step, model, optimizer):

@@ -3,11 +3,11 @@ import os
 import re
 import codecs
 import numpy as np
-import h5py
 
 from torch.utils.data import Dataset
+from utils import h5_loader
 
-vocab = "PE abcdefghijklmnopqrstuvwxyz'.,"  # P: Padding, E: EOS.
+vocab = "PE abcdefghijklmnopqrstuvwxyz'.,!?"  # P: Padding, E: EOS.
 char2idx = {char: idx for idx, char in enumerate(vocab)}
 idx2char = {idx: char for idx, char in enumerate(vocab)}
 
@@ -43,10 +43,12 @@ def get_test_data(sentences, max_n):
 
 
 class Speech(Dataset):
-    def __init__(self, keys, dir_name, file):
+    def __init__(self, keys, dir_name, file, mels, mags):
         self.keys = keys
         self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)), dir_name)
         self.fnames, self.text_lengths, self.texts = read_metadata(os.path.join(self.path, file))
+        self.mels = mels
+        self.mags = mags
 
     def slice(self, start, end):
         self.fnames = self.fnames[start:end]
@@ -62,22 +64,10 @@ class Speech(Dataset):
             data['texts'] = self.texts[index]
         if 'mels' in self.keys:
             # (39, 80)
-            while True:
-                try:
-                    with h5py.File(os.path.join(self.path, 'mels.hdf5'), "r") as mels:
-                        data['mels'] = mels[self.fnames[index]][()]
-                except KeyError:
-                    continue
-                break
+            data['mels'] = self.mels[self.fnames[index]][:]
         if 'mags' in self.keys:
             # (39, 80)
-            while True:
-                try:
-                    with h5py.File(os.path.join(self.path, 'mags.hdf5'), "r") as mags:
-                        data['mags'] = mags[self.fnames[index]][()]
-                except KeyError:
-                    continue
-                break
+            data['mags'] = self.mags[self.fnames[index]][:]
         if 'mel_gates' in self.keys:
             data['mel_gates'] = np.ones(data['mels'].shape[0], dtype=np.int)  # TODO: because pre processing!
         if 'mag_gates' in self.keys:
