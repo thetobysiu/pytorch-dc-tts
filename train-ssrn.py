@@ -114,7 +114,7 @@ def train(train_epoch, phase='train'):
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, ssrn, optimizer)
                 if global_step < 60000:
-                    for file in glob.glob(f'{logger.logdir}/step*'):
+                    for file in glob.glob(f'{logger.logdir}/step-{"[0-9]" * 6}.pth'):
                         if not abs(global_step - int(os.path.basename(file)[5:-4])) < 4000:
                             os.remove(file)
 
