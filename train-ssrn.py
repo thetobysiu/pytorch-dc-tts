@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from models import SSRN
 from hparams import HParams as hp
 from logger import Logger
-from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint
+from utils import get_last_checkpoint_file_name, load_checkpoint, save_checkpoint, h5_loader
 from datasets.data_loader import SSRNDataLoader
 from datasets.speech import Speech as SpeechDataset
 
@@ -30,16 +30,11 @@ print('use_gpu', use_gpu)
 if use_gpu:
     torch.backends.cudnn.benchmark = True
 
-train_data_loader = SSRNDataLoader(
-    ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=hp.ssrn_batch_size,
-    mode='train'
-)
-valid_data_loader = SSRNDataLoader(
-    ssrn_dataset=SpeechDataset(['mags', 'mels'], args.voice, args.script),
-    batch_size=hp.ssrn_batch_size,
-    mode='valid'
-)
+mels_h5 = h5_loader(f'datasets/{args.voice}/mels.h5', driver='core')
+mags_h5 = h5_loader(f'datasets/{args.voice}/mags.h5', swmr=True)
+speech_dataset = lambda: SpeechDataset(['mags', 'mels'], args.voice, args.script, mels_h5, mags_h5)
+train_data_loader = SSRNDataLoader(ssrn_dataset=speech_dataset(), batch_size=hp.ssrn_batch_size, mode='train')
+valid_data_loader = SSRNDataLoader(ssrn_dataset=speech_dataset(), batch_size=hp.ssrn_batch_size, mode='valid')
 
 ssrn = SSRN().cuda()
 
