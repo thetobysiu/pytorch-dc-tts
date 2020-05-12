@@ -18,8 +18,8 @@ from datasets.data_loader import SSRNDataLoader
 from datasets.speech import Speech
 
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument("--voice", default='Geralt', help='voice name')
-parser.add_argument("--script", default='Geralt_s5_no_a.csv', help='script filename')
+parser.add_argument("--voice", default='Keira', help='voice name')
+parser.add_argument("--script", default='Keira_all.csv', help='script filename')
 args = parser.parse_args()
 
 use_gpu = torch.cuda.is_available()
@@ -40,7 +40,7 @@ start_timestamp = int(time.time() * 1000)
 start_epoch = 0
 global_step = 0
 
-logger = Logger(f'{args.voice}-{hp.c}-{hp.ssrn_lr}-{hp.ssrn_batch_size}', 'ssrn')
+logger = Logger(f'{args.voice}-{args.script}-{hp.c}-{hp.ssrn_lr}-{hp.ssrn_batch_size}', 'ssrn')
 
 # load the last checkpoint if exists
 last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
@@ -109,13 +109,14 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss},
                             {'mags-true': M[:1, :, :], 'mags-pred': Z[:1, :, :], 'mels': S[:1, :, :]})
-            intervals = 500 if global_step < 60000 else 5000
+            # intervals = 1000 if global_step < 20000 else 5000
+            intervals = 5000
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, ssrn, optimizer)
-                if global_step < 60000:
-                    for file in glob.glob(f'{logger.logdir}/step-{"[0-9]" * 6}.pth'):
-                        if not abs(global_step - int(os.path.basename(file)[5:-4])) < 4000:
-                            os.remove(file)
+                # if global_step < 20000:
+                # for file in glob.glob(f'{logger.logdir}/step-{"[0-9]" * 6}.pth'):
+                #     if not abs(global_step - int(os.path.basename(file)[5:-4])) < 15000:
+                #         os.remove(file)
 
     epoch_loss = running_loss / it
     epoch_l1_loss = running_l1_loss / it

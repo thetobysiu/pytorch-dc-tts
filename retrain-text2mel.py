@@ -31,24 +31,27 @@ if use_gpu:
 
 Speech.load(['texts', 'mels', 'mel_gates'], args.voice, args.script)
 
-train_data_loader = Text2MelDataLoader(Speech, batch_size=hp.text2mel_batch_size, mode='train')
-valid_data_loader = Text2MelDataLoader(Speech, batch_size=hp.text2mel_batch_size, mode='valid')
+train_data_loader = Text2MelDataLoader(Speech, batch_size=hp.retext2mel_batch_size, mode='train')
+valid_data_loader = Text2MelDataLoader(Speech, batch_size=hp.retext2mel_batch_size, mode='valid')
 
 text2mel = Text2Mel(vocab).cuda()
 
-optimizer = torch.optim.Adam(text2mel.parameters(), lr=hp.text2mel_lr)
+optimizer = torch.optim.Adam(text2mel.parameters(), lr=hp.retext2mel_lr)
 
 start_timestamp = int(time.time() * 1000)
 start_epoch = 0
 global_step = 0
 
-logger = Logger(f'{args.voice}-{args.script}-{hp.d}-{hp.text2mel_lr}-{hp.text2mel_batch_size}', 'text2mel')
+logger = Logger(f'{args.voice}-{args.script}-{hp.d}-{hp.retext2mel_lr}-{hp.retext2mel_batch_size}', 'retext2mel')
 
 # load the last checkpoint if exists
 last_checkpoint_file_name = get_last_checkpoint_file_name(logger.logdir)
 if last_checkpoint_file_name:
     print("loading the last checkpoint: %s" % last_checkpoint_file_name)
     start_epoch, global_step = load_checkpoint(last_checkpoint_file_name, text2mel, optimizer)
+else:
+    print(f'Retrain starting...')
+    start_epoch, global_step = load_checkpoint('retrain/t2m/step-054000.pth', text2mel, optimizer)
 
 
 def get_lr():
@@ -56,7 +59,7 @@ def get_lr():
 
 
 def lr_decay(step, warmup_steps=4000):
-    new_lr = hp.text2mel_lr * warmup_steps ** 0.5 * min((step + 1) * warmup_steps ** -1.5, (step + 1) ** -0.5)
+    new_lr = hp.retext2mel_lr * warmup_steps ** 0.5 * min((step + 1) * warmup_steps ** -1.5, (step + 1) ** -0.5)
     optimizer.param_groups[0]['lr'] = new_lr
 
 
@@ -134,13 +137,13 @@ def train(train_epoch, phase='train'):
             })
             logger.log_step(phase, global_step, {'loss_l1': l1_loss, 'loss_att': att_loss},
                             {'mels-true': S[:1, :, :], 'mels-pred': Y[:1, :, :], 'attention': A[:1, :, :]})
-            intervals = 500 if global_step > 60000 else 1000
+            intervals = 500
             if global_step % intervals == 0:
                 save_checkpoint(logger.logdir, train_epoch, global_step, text2mel, optimizer)
-                if global_step < 60000:
-                    for file in glob.glob(f'{logger.logdir}/step-{"[0-9]" * 6}.pth'):
-                        if not abs(global_step - int(os.path.basename(file)[5:-4])) < 10000:
-                            os.remove(file)
+                # if global_step < 60000:
+                #     for file in glob.glob(f'{logger.logdir}/step-{"[0-9]" * 6}.pth'):
+                #         if not abs(global_step - int(os.path.basename(file)[5:-4])) < 10000:
+                #             os.remove(file)
 
     epoch_loss = running_loss / it
     epoch_l1_loss = running_l1_loss / it

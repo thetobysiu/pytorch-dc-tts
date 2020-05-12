@@ -39,9 +39,9 @@ def h5_loader(filepath, mode='r'):
             additional['driver'] = 'core'
         else:
             additional['swmr'] = True
-            additional['rdcc_w0'] = 0.4
-            additional['rdcc_nslots'] = 4019
-            additional['rdcc_nbytes'] = 8192 ** 2
+            # additional['rdcc_w0'] = 0.4
+            # additional['rdcc_nslots'] = 4019
+            # additional['rdcc_nbytes'] = 40960 ** 2
     return h5py.File(filepath, mode=mode, libver='latest', **additional)
 
 
