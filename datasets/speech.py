@@ -4,10 +4,11 @@ import re
 import codecs
 import numpy as np
 
+from hparams import HParams as hp
 from torch.utils.data import Dataset
 from utils import h5_loader
 
-vocab = "PE abcdefghijklmnopqrstuvwxyz'.,!?"  # P: Padding, E: EOS.
+vocab = hp.vocab
 char2idx = {char: idx for idx, char in enumerate(vocab)}
 idx2char = {idx: char for idx, char in enumerate(vocab)}
 
@@ -34,12 +35,10 @@ def read_metadata(metadata_file):
     return fnames, text_lengths, texts
 
 
-def get_test_data(sentences, max_n):
-    normalized_sentences = [text_normalize(line).strip() + "E" for line in sentences]  # text normalization, E: EOS
-    texts = np.zeros((len(normalized_sentences), max_n + 1), np.long)
-    for i, sent in enumerate(normalized_sentences):
-        texts[i, :len(sent)] = [char2idx[char] for char in sent]
-    return texts
+def get_test_data(sentence):
+    normalized_sentence = text_normalize(sentence) + "E"   # text normalization, E: EOS
+    text = np.array([[char2idx[char] for char in normalized_sentence]], np.long)
+    return text
 
 
 class Speech(Dataset):
@@ -50,6 +49,7 @@ class Speech(Dataset):
     _fnames = None
     _text_lengths = None
     _texts = None
+    vocab = hp.vocab
 
     def __init__(self, start, end):
         self.fnames = Speech._fnames[start:end]
@@ -79,11 +79,9 @@ class Speech(Dataset):
         if 'texts' in self.keys:
             data['texts'] = self.texts[index]
         if 'mels' in self.keys:
-            # (39, 80)
             Speech.singleton('mels')
             data['mels'] = Speech.mels[self.fnames[index]][:]
         if 'mags' in self.keys:
-            # (39, 80)
             Speech.singleton('mags')
             data['mags'] = Speech.mags[self.fnames[index]][:]
         if 'mel_gates' in self.keys:

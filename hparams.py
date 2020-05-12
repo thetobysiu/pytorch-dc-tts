@@ -9,10 +9,11 @@ class HParams:
 
     logdir = "logdir"  # log dir where the checkpoints and tensorboard files are saved
     max_load_memory = 4000000000  # h5 file size larger than this will not be load into memory
+    vocab = "PE abcdefghijklmnopqrstuvwxyz'.,!?"  # P: Padding, E: EOS.
 
     # audio.py options, these values are from https://github.com/Kyubyong/dc_tts/blob/master/hyperparams.py
     reduction_rate = 4  # melspectrogram reduction rate, don't change because SSRN is using this rate
-    n_fft = 2048 # fft points (samples)
+    n_fft = 2048  # fft points (samples)
     n_mels = 80  # Number of Mel banks to generate
     power = 1.5  # Exponent for amplifying the predicted magnitude
     n_iter = 50  # Number of inversion iterations
@@ -24,18 +25,20 @@ class HParams:
     frame_length = 0.05  # seconds
     hop_length = int(sr * frame_shift)  # samples. =276.
     win_length = int(sr * frame_length)  # samples. =1102.
-    max_N = 180  # Maximum number of characters.
-    max_T = 210  # Maximum number of mel frames.
+    max_N = 259  # Maximum number of characters.
+    max_T = 326  # Maximum number of mel frames.
 
     e = 128  # embedding dimension
-    d = 512  # Text2Mel hidden unit dimension
+    d = 256  # Text2Mel hidden unit dimension
     c = 512+128  # SSRN hidden unit dimension
 
     dropout_rate = 0.05  # dropout
 
     # Text2Mel network options
     text2mel_lr = 0.005  # learning rate
-    text2mel_batch_size = 24
+    text2mel_batch_size = 64
+    retext2mel_lr = 0.001  # learning rate
+    retext2mel_batch_size = 24
     text2mel_max_iteration = 300000  # max train step
     text2mel_weight_init = 'none'  # 'kaiming', 'xavier' or 'none'
     text2mel_normalization = 'layer'  # 'layer', 'weight' or 'none'
